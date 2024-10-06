@@ -2,8 +2,7 @@
   AHK QuickCommand by Azona77
     requires: AutoHotkey v1.1
 */
-#SingleInstance force
-global FunctionList := []
+global FunctionList := ["ActionExample","OpenAHKDoc","OpenMyComputer","OpenNotepad","OpenTaskManager","OpenControlPanel","OpenCommandPromptCMD","PasteTime"]
 Loop, Read, %A_ScriptFullPath%
 {
     if RegExMatch(A_LoopReadLine, "^\s*(\w+)\s*\(\)\s*{", match)  ; 匹配函数定义
@@ -11,8 +10,8 @@ Loop, Read, %A_ScriptFullPath%
 }
 ; Sort the list alphabetically
 FunctionList := sortArray(FunctionList)
+FunctionList := trimArray(FunctionList)
 ;-----------------------------------------------------------------------------------
-; ↑↑↑↑↑ Paste code above to the top of your script to automatically retrieve the list of functions when the script is loaded.
 
 
 
@@ -190,5 +189,22 @@ sortArray(arr,options="") {	; specify only "Flip" in the options to reverse othe
         Loop, parse, list, `n, `r
             new.Insert(A_LoopField)
         return	new
+}
+;-----------------------------------------------------------------------------------
+/*
+;-----------------------------------------------------------------------------------
+; Code snippet from:
+    ; https://stackoverflow.com/questions/46432447/how-do-i-remove-duplicates-from-an-autohotkey-array
+;-----------------------------------------------------------------------------------
+*/
+trimArray(arr) { ; Hash O(n) 
+
+    hash := {}, newArr := []
+
+    for e, v in arr
+        if (!hash.Haskey(v))
+            hash[(v)] := 1, newArr.push(v)
+
+    return newArr
 }
 ;-----------------------------------------------------------------------------------
