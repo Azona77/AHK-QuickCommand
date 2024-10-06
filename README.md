@@ -16,11 +16,12 @@
 - **Quick search**: Type to filter commands. Trigger by double-click or pressing Enter.
 
 ## Usage
-1. Edit your existing AHK script and include `AHK QuickCommand.ahk` in your main script like this: `#Include, C:\Desktop\AHK QuickCommand.ahk`
+1. Edit your existing AHK script and include `AHK QuickCommand.ahk` at the top of your main script like this: `#Include, C:\Desktop\AHK QuickCommand.ahk`
 2. Save and run the script. Press `Capslock + C` to open the GUI.
 3. Type to filter commands. Use arrow keys to navigate, and press `Enter` or double-click to execute the selected function.
 
 ## Note
+- Requires: AutoHotkey v1.1+
 - Commands should be defined as a function in the following format:
 ```AutoHotKey
 ; Example Commands
