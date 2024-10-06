@@ -1,5 +1,5 @@
 ## AHK-QuickCommand
-**AHK QuickCommand** is a plug-and-play AutoHotkey snippet that enables you to instantly search and execute already-existing functions or cmo in your scripts with minimal setup.
+**AHK QuickCommand** is a plug-and-play AutoHotkey snippet that enables you to instantly search and execute already-existing functions or commands in your scripts with minimal setup.
 
 <div align=center>
 <img src="https://github.com/user-attachments/assets/5f9f79d5-e683-48f3-92cf-bd712c4d09df" width="300px" style="margin-right:auto; margin-left:auto">
@@ -22,7 +22,7 @@
 
 ## Note
 - Requires: AutoHotkey v1.1+
-- Commands should be defined as a function in the following format:
+- Commands should be defined in the following format:
 ```AutoHotKey
 ; Example Commands
     ; To Exclude: change "func(){" to "func( ){"
@@ -31,3 +31,4 @@ ActionExample(){
     ; Replace with your custom function 
 }
 ```
+- The `#Include, C:\Desktop\AHK QuickCommand.ahk` should be placed right after your  startup scripts which automatically run after initialing.
