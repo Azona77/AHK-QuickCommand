@@ -79,6 +79,11 @@ C::
         Gui, Submit, NoHide
         searchText := SearchInput
         matchedList := RegExMatchList(FunctionList, searchText)
+        ; ↓↓↓ Uncommenting following 4 lines to trigger immediately when matched item is unique
+        ; if (IsFunc(matchedList)) {
+        ;     Gui, Destroy
+        ;     %matchedList%()
+        ; }
         GuiControl,, ListBox,  
         if (matchedList != ""){
             GuiControl,, ListBox, % "|" matchedList
