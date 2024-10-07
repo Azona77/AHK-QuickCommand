@@ -31,4 +31,4 @@ ActionExample(){
     ; Replace with your custom function 
 }
 ```
-- The `#Include, C:\Desktop\AHK QuickCommand.ahk` should be placed right after your  startup scripts which automatically run after initialing.
+- The `#Include, C:\Desktop\AHK QuickCommand.ahk` should be placed right after your  startup scripts which automatically run after initializing.
