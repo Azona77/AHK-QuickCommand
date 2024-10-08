@@ -52,8 +52,14 @@ PasteTime(){
 #if GetKeyState("CapsLock", "P")
 C::
     SetCapsLockState, off
+    if (A_ThisHotkey = "c" && A_ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < 250) && LastCommand{
+    gui, Destroy
+    global LastCommand
+    %LastCommand%()
+    }
+    else if !(WinActive("AHK QuickCommand") && WinActive("ahk_class AutoHotkeyGUI")){
     global FunctionList
-    Gui, Destroy    
+    Gui, Destroy
 
     FontSize := 32
     Margin := FontSize * 0
@@ -96,7 +102,9 @@ C::
             RunListboxItem()
         }
     return
+}
 return
+
 #if 
 
 #IfWinActive AHK QuickCommand ahk_class AutoHotkeyGUI
@@ -143,6 +151,8 @@ RunListboxItem( ){
     GuiControlGet, selectedItem, , ListBox1
     if (IsFunc(selectedItem)) {
         Gui, Destroy
+        global LastCommand
+        LastCommand:= selectedItem
         %selectedItem%()
     }else{
         tooltip, not existing func
