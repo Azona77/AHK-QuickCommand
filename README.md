@@ -32,3 +32,9 @@ ActionExample(){
 }
 ```
 - The `#Include, C:\Desktop\AHK QuickCommand.ahk` should be placed right after your  startup scripts which automatically run after initializing.
+
+## Extended Features
+- Use `CapsLock+W/S/Space` as `Up/Down/Enter`;
+- Use `CapsLock+C+C` to trigger last excuted command;
+- Trigger immediately when matched command is unique (Off by default);
+- Specific features can be fine-tuned by modifying the code.
