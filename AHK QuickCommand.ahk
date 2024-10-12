@@ -49,35 +49,39 @@ PasteTime(){
     
 ;-----------------------------------------------------------------------------------
 ; Main 
+#C::
 #if GetKeyState("CapsLock", "P")
 C::
     SetCapsLockState, off
+    global LastCommand
     if (A_ThisHotkey = "c" && A_ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < 250) && LastCommand{
     gui, Destroy
-    global LastCommand
     %LastCommand%()
     }
     else if !(WinActive("AHK QuickCommand") && WinActive("ahk_class AutoHotkeyGUI")){
-    global FunctionList
     Gui, Destroy
 
     FontSize := 32
     Margin := FontSize * 0
     backgroundColor = 1d1d1d
     FontColor = d1d1d1
+    transparency := 240
 
-    Gui -Caption +ToolWindow +Border
+    Gui, -Caption +ToolWindow -border
+
     Gui, Margin, %Margin%, %Margin%
     Gui, Color, , %backgroundColor%
     Gui, Font, s%FontSize% c%FontColor% bold, Microsoft YaHei
 
-    Gui, Add, Edit, vSearchInput w800 gUpdateListBox,
-    Gui, Add, ListBox, vListBox w800 h800 gListBoxKey,
+    Gui, Add, Edit, vSearchInput w800 gUpdateListBox -vscroll -E0x200,
+    Gui, Add, ListBox, vListBox w800 h800 gListBoxKey -E0x200,
     Gui, Show,, AHK QuickCommand
 
-    GuiControl,, ListBox,  
+    WinSet, Transparent, %transparency%, AHK QuickCommand
+
+    GuiControl,, ListBox1,  
     for index, value in FunctionList {
-        GuiControl,, ListBox, %value%
+        GuiControl,, ListBox1, %value%
     }
     return
 
@@ -90,14 +94,14 @@ C::
         ;     Gui, Destroy
         ;     %matchedList%()
         ; }
-        GuiControl,, ListBox,  
+        GuiControl,, ListBox1,  
         if (matchedList != ""){
-            GuiControl,, ListBox, % "|" matchedList
+            GuiControl,, ListBox1, % "|" matchedList
         }
     return
 
     ListBoxKey:
-        GuiControlGet, selectedItem, , ListBox
+        GuiControlGet, selectedItem, , ListBox1
         if (A_GuiEvent = "DoubleClick"){
             RunListboxItem()
         }
@@ -118,30 +122,43 @@ CapsLock & Space::
     RunListboxItem()
 return
 
+GetLineNumber( ){
+    ; Code from: https://www.autohotkey.com/board/topic/954-guicontrolget-listbox-line-number/
+    SendMessage, 0x188, 0, 0, ListBox1, A
+    return (ErrorLevel+1)
+}
+GetLineCount( ){
+    ; Code from: https://www.autohotkey.com/boards/viewtopic.php?t=43057
+    SendMessage, 0x18B, 0, 0, ListBox1, A ; LB_GETCOUNT
+    return ErrorLevel
+}
+
 CapsLock & Esc::BackSpace
 Esc::Gui, Destroy
 
 ~LButton::
     If !WinActive("AHK QuickCommand"){
-        Gui, Hide
+        Gui, Destroy
     }
 return
 
 CapsLock & S::
 Down::
-ControlGetFocus, focusedControl
-if (focusedControl = "Edit1"){
-        GuiControl, Focus, ListBox
+    if (GetLineNumber() = GetLineCount()){
+        ControlSend, ListBox1, {Home}
     }
-Send, {Down}
+    else{
+        ControlSend, ListBox1, {Down}
+    }
 return
 CapsLock & W::
 Up::
-ControlGetFocus, focusedControl
-if (focusedControl = "Edit1"){
-        GuiControl, Focus, ListBox
+    if (GetLineNumber() = 0 or GetLineNumber() = 1){
+        ControlSend, ListBox1, {End}
     }
-Send, {Up}
+    else{
+        ControlSend, ListBox1, {Up}
+    }
 return
 #IfWinActive
 ;-----------------------------------------------------------------------------------
@@ -157,6 +174,8 @@ RunListboxItem( ){
     }else{
         tooltip, not existing func
         GuiControl, Focus, SearchInput
+        sleep, 1000
+        tooltip
     }
 return
 }
