@@ -114,7 +114,7 @@ return
 #IfWinActive AHK QuickCommand ahk_class AutoHotkeyGUI
 CapsLock & Space::
 ~Enter::
-    ControlGetFocus, focusedControl
+    ControlGetFocus, focusedControl, A 
     if (focusedControl = "Edit1"){
         GuiControl, Focus, ListBox
         Send, {Down}
@@ -144,6 +144,7 @@ return
 
 CapsLock & S::
 Down::
+    GuiControl, Focus, ListBox 
     if (GetLineNumber() = GetLineCount()){
         ControlSend, ListBox1, {Home}
     }
@@ -153,6 +154,7 @@ Down::
 return
 CapsLock & W::
 Up::
+    GuiControl, Focus, ListBox 
     if (GetLineNumber() = 0 or GetLineNumber() = 1){
         ControlSend, ListBox1, {End}
     }
@@ -170,6 +172,7 @@ RunListboxItem( ){
         Gui, Destroy
         global LastCommand
         LastCommand:= selectedItem
+        sleep, 50
         %selectedItem%()
     }else{
         tooltip, not existing func
