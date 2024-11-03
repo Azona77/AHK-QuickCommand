@@ -122,6 +122,10 @@ CapsLock & Space::
     RunListboxItem()
 return
 
+~BackSpace::
+    GuiControl, Focus, Edit1
+return
+
 GetLineNumber( ){
     ; Code from: https://www.autohotkey.com/board/topic/954-guicontrolget-listbox-line-number/
     SendMessage, 0x188, 0, 0, ListBox1, A
