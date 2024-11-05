@@ -73,7 +73,10 @@ C::
     Gui, Color, , %backgroundColor%
     Gui, Font, s%FontSize% c%FontColor% bold, Microsoft YaHei
 
-    Gui, Add, Edit, vSearchInput w800 gUpdateListBox -vscroll -E0x200,
+    Gui, Add, Edit, vSearchInput w800 gUpdateListBox -vscroll -E0x200 hwndHSearchInput
+    if LastCommand{
+        SetEditCueBanner(HSearchInput, LastCommand . " ⬅️ Capslock+C+C")
+    }
     Gui, Add, ListBox, vListBox w800 h800 gListBoxKey -E0x200,
     Gui, Show,, AHK QuickCommand
 
@@ -249,3 +252,14 @@ trimArray(arr) { ; Hash O(n)
     return newArr
 }
 ;-----------------------------------------------------------------------------------
+/*
+;-----------------------------------------------------------------------------------
+; Code snippet from:
+    ; https://www.autohotkey.com/board/topic/76540-function-seteditcuebanner-ahk-l/
+;-----------------------------------------------------------------------------------
+*/
+SetEditCueBanner(HWND, Cue) {  ; requires AHL_L
+    Static EM_SETCUEBANNER := (0x1500 + 1)
+    Return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", EM_SETCUEBANNER, "Ptr", True, "WStr", Cue)
+ }
+ 
