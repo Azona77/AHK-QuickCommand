@@ -115,7 +115,11 @@ return
 #if 
 
 #IfWinActive AHK QuickCommand ahk_class AutoHotkeyGUI
-CapsLock & Space::
+Space::
+    if !GetKeyState("Capslock", "P"){
+        Send, {Blind}{Space}
+        return
+    }
 ~Enter::
     ControlGetFocus, focusedControl, A 
     if (focusedControl = "Edit1"){
@@ -140,8 +144,15 @@ GetLineCount( ){
     return ErrorLevel
 }
 
-CapsLock & Esc::BackSpace
-Esc::Gui, Destroy
+*Esc::
+    if GetKeyState("Capslock", "P"){
+        Send, {Blind}{BackSpace}
+        return
+    }
+    else{
+        Gui, Destroy
+    }
+Return
 
 ~LButton::
     If !WinActive("AHK QuickCommand"){
@@ -149,7 +160,11 @@ Esc::Gui, Destroy
     }
 return
 
-CapsLock & S::
+*S::
+    if !GetKeyState("Capslock", "P"){
+        Send, {Blind}s
+        return
+    }
 Down::
     GuiControl, Focus, ListBox 
     if (GetLineNumber() = GetLineCount()){
@@ -159,7 +174,11 @@ Down::
         ControlSend, ListBox1, {Down}
     }
 return
-CapsLock & W::
+*W::
+    if !GetKeyState("Capslock", "P"){
+        Send, {Blind}w
+        return
+    }
 Up::
     GuiControl, Focus, ListBox 
     if (GetLineNumber() = 0 or GetLineNumber() = 1){
