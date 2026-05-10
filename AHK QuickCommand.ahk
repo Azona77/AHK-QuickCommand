@@ -1,4 +1,4 @@
-/*
+﻿/*
   AHK QuickCommand by Azona77
     requires: AutoHotkey v1.1
 */
@@ -83,7 +83,7 @@ C::
     Gui, -Caption +ToolWindow -border
 
     Gui, Margin, %Margin%, %Margin%
-    Gui, Color, , %backgroundColor%
+    Gui, Color, %backgroundColor%, %backgroundColor%
     Gui, Font, s%FontSize% c%FontColor% bold, Microsoft YaHei
 
     ; Native Edit keeps keyboard input reliable; the result panel below is rendered by HTML.
@@ -94,11 +94,11 @@ C::
     ; Shell.Explorer gives us colored spans and emoji rendering without replacing AHK hotkeys.
     Gui, Add, ActiveX, vQuickCommandWeb w800 h800 hwndHQuickCommandWeb, Shell.Explorer
     QuickCommandInitRenderer(QuickCommandWeb)
-    Gui, Show,, AHK QuickCommand
-
-    WinSet, Transparent, %transparency%, AHK QuickCommand
-
     QuickCommandRenderResults("")
+
+    Gui, Show,, AHK QuickCommand
+    WinSet, Transparent, %transparency%, AHK QuickCommand
+    QuickCommandFocusSearch()
     return
 
     UpdateListBox:
@@ -209,6 +209,7 @@ QuickCommandInitRenderer(ByRef web) {
     web.Navigate("about:blank")
     while (web.Busy || web.ReadyState != 4)
         Sleep, 10
+    QuickCommandWriteHtml(web, QuickCommandBuildBlankHtml())
     ComObjConnect(web, "QuickCommandWeb_")
 }
 
@@ -287,8 +288,12 @@ QuickCommandRenderHtml() {
         return
 
     html := QuickCommandBuildHtml()
+    QuickCommandWriteHtml(QuickCommandWeb, html)
+}
+
+QuickCommandWriteHtml(web, html) {
     try {
-        doc := QuickCommandWeb.Document
+        doc := web.Document
         doc.open()
         doc.write(html)
         doc.close()
@@ -341,6 +346,14 @@ QuickCommandBuildHtml() {
         . "</style>"
         . "<script>function qcSignal(a,i){document.title='qc:'+a+':'+i+':'+(new Date()).getTime();}function qcSelect(i){qcSignal('select',i);}function qcRun(i){qcSignal('run',i);}</script>"
         . "</head><body><div class='wrap'>" . rows . "</div></body></html>"
+}
+
+QuickCommandBuildBlankHtml() {
+    global QuickCommandConfig
+
+    return "<!doctype html><html><head><meta http-equiv='X-UA-Compatible' content='IE=edge'><meta charset='utf-8'>"
+        . "<style>html,body{margin:0;padding:0;background:#" . QuickCommandConfig.Background . ";overflow:hidden;}</style>"
+        . "</head><body></body></html>"
 }
 
 ; Built-in metadata for demo commands. User commands can either be added here or
