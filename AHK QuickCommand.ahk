@@ -63,13 +63,33 @@ PasteTime(){
 ; - First press opens the command palette.
 ; - Double press repeats the last selected command.
 #C::
+    QuickCommandInvoke("WinC")
+return
+
 #if GetKeyState("CapsLock", "P")
 C::
     SetCapsLockState, off
-    global LastCommand
-    if (A_ThisHotkey = "c" && A_ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < 250) or (A_ThisHotkey = "F18" && A_ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < 250) && LastCommand{
-    gui, Destroy
-    %LastCommand%()
+    QuickCommandInvoke("CapsC")
+return
+
+#if 
+
+QuickCommandInvoke(trigger := "") {
+    global LastCommand, HSearchInput, QuickCommandWeb, HQuickCommandWeb, SearchInput
+    static PriorTrigger := ""
+    static PriorTick := 0
+
+    if (trigger = "")
+        trigger := A_ThisHotkey
+
+    isDoublePress := (trigger != "" && trigger = PriorTrigger && A_TickCount - PriorTick < 250)
+    PriorTrigger := trigger
+    PriorTick := A_TickCount
+
+    if (isDoublePress && LastCommand) {
+        Gui, Destroy
+        %LastCommand%()
+        return
     }
     else if !(WinActive("AHK QuickCommand") && WinActive("ahk_class AutoHotkeyGUI")){
     Gui, Destroy
@@ -87,7 +107,7 @@ C::
     Gui, Font, s%FontSize% c%FontColor% bold, Microsoft YaHei
 
     ; Native Edit keeps keyboard input reliable; the result panel below is rendered by HTML.
-    Gui, Add, Edit, vSearchInput w800 gUpdateListBox -vscroll -E0x200 hwndHSearchInput
+    Gui, Add, Edit, vSearchInput w800 gQuickCommandUpdateListBox -vscroll -E0x200 hwndHSearchInput
     if LastCommand{
         SetEditCueBanner(HSearchInput, LastCommand . " ⬅️ Capslock+C+C")
     }
@@ -99,24 +119,21 @@ C::
     Gui, Show,, AHK QuickCommand
     WinSet, Transparent, %transparency%, AHK QuickCommand
     QuickCommandFocusSearch()
-    return
+    }
+return
+}
 
-    UpdateListBox:
-        Gui, Submit, NoHide
-        searchText := SearchInput
-        QuickCommandRenderResults(searchText)
+QuickCommandUpdateListBox:
+    Gui, Submit, NoHide
+    searchText := SearchInput
+    QuickCommandRenderResults(searchText)
         ; ↓↓↓ Uncommenting following 4 lines to trigger immediately when matched item is unique
         ; matchedList := RegExMatchList(FunctionList, searchText)
         ; if (IsFunc(matchedList)) {
         ;     Gui, Destroy
         ;     %matchedList%()
         ; }
-    return
-
-}
 return
-
-#if 
 
 #IfWinActive AHK QuickCommand ahk_class AutoHotkeyGUI
 Space::
