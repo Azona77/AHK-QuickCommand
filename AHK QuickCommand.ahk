@@ -6,7 +6,7 @@ global FunctionList := ["ActionExample","OpenAHKDoc","OpenMyComputer","OpenNotep
 global QuickCommandResults := []
 global QuickCommandMeta := {}
 global QuickCommandState := {Selected: 1, Query: ""}
-global QuickCommandConfig := {Width: 800, Height: 800, RowHeight: 52, Background: "1d1d1d", Foreground: "d1d1d1", Muted: "7f858d", Accent: "8bd5ff", Regex: "f5a97f", Acronym: "a6da95", Fuzzy: "c6a0f6", Contains: "eed49f"}
+global QuickCommandConfig := {Width: 800, Height: 800, RowHeight: 52, IndicatorWidth: 34, NoteWidth: 190, Background: "1d1d1d", Foreground: "d1d1d1", Muted: "7f858d", Accent: "8bd5ff", Regex: "f5a97f", Acronym: "a6da95", Fuzzy: "c6a0f6", Contains: "eed49f"}
 
 ; Catalog bootstrap:
 ; - FunctionList stores real callable function names.
@@ -285,19 +285,34 @@ QuickCommandSelect(index, shouldRender := true) {
         QuickCommandState.Selected := 0
         return
     }
+    previousRow := QuickCommandState.Selected ? QuickCommandState.Selected : 0
     if (index < 1)
         index := 1
     else if (index > rowCount)
         index := rowCount
     QuickCommandState.Selected := index
     if (shouldRender) {
-        QuickCommandRenderHtml()
+        QuickCommandSyncSelection(previousRow, index)
         QuickCommandFocusSearch()
     }
 }
 
-; Write a full HTML document into the embedded renderer. This is intentionally a
-; full rewrite because result counts are small and it keeps event wiring simple.
+; Keep keyboard/mouse selection cheap: update only affected DOM rows and preserve
+; the list scroll state instead of rewriting the whole document.
+QuickCommandSyncSelection(previousRow, selectedRow) {
+    global QuickCommandWeb
+
+    if (!IsObject(QuickCommandWeb))
+        return
+
+    try {
+        script := "qcSetSelection(" . previousRow . "," . selectedRow . ");"
+        QuickCommandWeb.Document.parentWindow.execScript(script, "JavaScript")
+    }
+}
+
+; Search changes write a full HTML document. Selection changes are synced in-place
+; by QuickCommandSyncSelection so the result list keeps its scroll position.
 QuickCommandRenderHtml() {
     global QuickCommandWeb
 
@@ -335,8 +350,8 @@ QuickCommandBuildHtml() {
     } else {
         for index, result in QuickCommandResults {
             selectedClass := (index = QuickCommandState.Selected) ? " selected" : ""
-            indicator := (index = QuickCommandState.Selected) ? "▶" : ""
-            rows .= "<div class='row" . selectedClass . "' onclick='qcSelect(" . index . ")' ondblclick='qcRun(" . index . ")'>"
+            indicator := (index = QuickCommandState.Selected) ? "&#9656;" : ""
+            rows .= "<div id='qc-row-" . index . "' class='row" . selectedClass . "' onclick='qcSelect(" . index . ")' ondblclick='qcRun(" . index . ")'>"
                 . "<span class='indicator'>" . indicator . "</span>"
                 . "<span class='command'>" . result.Html . "</span>"
                 . "<span class='note'>" . QuickCommandHtmlEscape(result.Note) . "</span>"
@@ -346,13 +361,13 @@ QuickCommandBuildHtml() {
 
     return "<!doctype html><html><head><meta http-equiv='X-UA-Compatible' content='IE=edge'><meta charset='utf-8'>"
         . "<style>"
-        . "html,body{margin:0;padding:0;background:#" . QuickCommandConfig.Background . ";color:#" . QuickCommandConfig.Foreground . ";overflow:hidden;font-family:'Microsoft YaHei','Segoe UI Emoji','Segoe UI Symbol','Segoe UI',sans-serif;font-size:30px;font-weight:700;}"
-        . ".wrap{width:100%;height:100%;box-sizing:border-box;padding:0;}"
-        . ".row{height:" . QuickCommandConfig.RowHeight . "px;line-height:" . QuickCommandConfig.RowHeight . "px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 18px;box-sizing:border-box;cursor:default;border-left:4px solid transparent;}"
+        . "html,body{height:100%;margin:0;padding:0;background:#" . QuickCommandConfig.Background . ";color:#" . QuickCommandConfig.Foreground . ";overflow:hidden;font-family:'Microsoft YaHei','Segoe UI Emoji','Segoe UI Symbol','Segoe UI',sans-serif;font-size:30px;font-weight:700;}"
+        . ".wrap{width:100%;height:100%;box-sizing:border-box;padding:0;overflow-y:auto;overflow-x:hidden;}"
+        . ".row{display:table;width:100%;table-layout:fixed;height:" . QuickCommandConfig.RowHeight . "px;line-height:" . QuickCommandConfig.RowHeight . "px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 18px;box-sizing:border-box;cursor:default;border-left:4px solid transparent;}"
         . ".row.selected{background:#2a2f36;border-left-color:#" . QuickCommandConfig.Accent . ";}"
-        . ".indicator{display:inline-block;width:34px;color:#" . QuickCommandConfig.Accent . ";}"
-        . ".command{display:inline-block;width:520px;overflow:hidden;text-overflow:ellipsis;vertical-align:top;}"
-        . ".note{font-size:20px;color:#" . QuickCommandConfig.Muted . ";font-weight:400;vertical-align:top;}"
+        . ".indicator{display:table-cell;width:" . QuickCommandConfig.IndicatorWidth . "px;color:#" . QuickCommandConfig.Accent . ";vertical-align:middle;}"
+        . ".command{display:table-cell;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;}"
+        . ".note{display:table-cell;width:" . QuickCommandConfig.NoteWidth . "px;overflow:hidden;text-overflow:ellipsis;font-size:20px;color:#" . QuickCommandConfig.Muted . ";font-weight:400;vertical-align:middle;}"
         . ".m-prefix{color:#" . QuickCommandConfig.Accent . ";}"
         . ".m-contains{color:#" . QuickCommandConfig.Contains . ";}"
         . ".m-acronym{color:#" . QuickCommandConfig.Acronym . ";}"
@@ -361,15 +376,22 @@ QuickCommandBuildHtml() {
         . ".alias{color:#" . QuickCommandConfig.Muted . ";font-weight:400;}"
         . ".empty{padding:24px 20px;color:#" . QuickCommandConfig.Muted . ";}"
         . "</style>"
-        . "<script>function qcSignal(a,i){document.title='qc:'+a+':'+i+':'+(new Date()).getTime();}function qcSelect(i){qcSignal('select',i);}function qcRun(i){qcSignal('run',i);}</script>"
-        . "</head><body><div class='wrap'>" . rows . "</div></body></html>"
+        . "<script>"
+        . "function qcSignal(a,i){document.title='qc:'+a+':'+i+':'+(new Date()).getTime();}"
+        . "function qcRow(i){return document.getElementById('qc-row-'+i);}"
+        . "function qcScrollNearest(el){var wrap=document.getElementById('qc-wrap');if(!wrap||!el){return;}var top=el.offsetTop;var bottom=top+el.offsetHeight;if(top<wrap.scrollTop){wrap.scrollTop=top;}else if(bottom>wrap.scrollTop+wrap.clientHeight){wrap.scrollTop=bottom-wrap.clientHeight;}}"
+        . "function qcSetSelection(prev,next){var oldRow=qcRow(prev);var newRow=qcRow(next);if(oldRow&&oldRow!=newRow){oldRow.className=oldRow.className.replace(/(^| )selected( |$)/,' ');var oldMark=oldRow.getElementsByTagName('span')[0];if(oldMark){oldMark.innerHTML='';}}if(newRow){if((' '+newRow.className+' ').indexOf(' selected ')<0){newRow.className+=' selected';}var newMark=newRow.getElementsByTagName('span')[0];if(newMark){newMark.innerHTML='&#9656;';}qcScrollNearest(newRow);}}"
+        . "function qcSelect(i){qcSignal('select',i);}"
+        . "function qcRun(i){qcSignal('run',i);}"
+        . "</script>"
+        . "</head><body><div id='qc-wrap' class='wrap'>" . rows . "</div></body></html>"
 }
 
 QuickCommandBuildBlankHtml() {
     global QuickCommandConfig
 
     return "<!doctype html><html><head><meta http-equiv='X-UA-Compatible' content='IE=edge'><meta charset='utf-8'>"
-        . "<style>html,body{margin:0;padding:0;background:#" . QuickCommandConfig.Background . ";overflow:hidden;}</style>"
+        . "<style>html,body{height:100%;margin:0;padding:0;background:#" . QuickCommandConfig.Background . ";overflow:hidden;}</style>"
         . "</head><body></body></html>"
 }
 
