@@ -6,7 +6,7 @@ global FunctionList := ["ActionExample","OpenAHKDoc","OpenMyComputer","OpenNotep
 global QuickCommandResults := []
 global QuickCommandMeta := {}
 global QuickCommandState := {Selected: 1, Query: "", Running: false}
-global QuickCommandConfig := {Width: 800, Height: 800, RowHeight: 52, IndicatorWidth: 34, NoteWidth: 190, RunFeedbackMs: 80, Background: "1d1d1d", Foreground: "d1d1d1", Muted: "7f858d", Accent: "8bd5ff", SelectedBackground: "2a2f36", RunningBackground: "334252", ScrollbarFace: "4b5563", ScrollbarTrack: "20242a", ScrollbarArrow: "8bd5ff", Regex: "f5a97f", Acronym: "a6da95", Fuzzy: "c6a0f6", Contains: "eed49f"}
+global QuickCommandConfig := {Width: 800, Height: 800, RowHeight: 52, IndicatorWidth: 34, NoteWidth: 190, RunFeedbackMs: 80, Background: "1d1d1d", Foreground: "d1d1d1", Muted: "7f858d", Accent: "8bd5ff", HoverBackground: "24282f", SelectedBackground: "2a2f36", RunningBackground: "334252", ScrollbarFace: "4b5563", ScrollbarTrack: "20242a", ScrollbarArrow: "8bd5ff", Regex: "f5a97f", Acronym: "a6da95", Fuzzy: "c6a0f6", Contains: "eed49f"}
 
 ; Catalog bootstrap:
 ; - FunctionList stores real callable function names.
@@ -240,7 +240,7 @@ QuickCommandInitRenderer(ByRef web) {
 }
 
 QuickCommandWeb_TitleChange(title) {
-    if RegExMatch(title, "^qc:(hover|select|run):(\d+):", match) {
+    if RegExMatch(title, "^qc:(select|run):(\d+):", match) {
         QuickCommandSelect(match2)
         if (match1 = "run")
             RunListboxItem()
@@ -285,7 +285,7 @@ QuickCommandMoveSelection(delta) {
     QuickCommandSelect(nextRow)
 }
 
-; Change selected result. This is called by keyboard movement and HTML row clicks.
+; Change selected result. This is called by keyboard movement and committed HTML selection events.
 QuickCommandSelect(index, shouldRender := true) {
     global QuickCommandResults
     global QuickCommandState
@@ -373,7 +373,7 @@ QuickCommandBuildHtml() {
         for index, result in QuickCommandResults {
             selectedClass := (index = QuickCommandState.Selected) ? " selected" : ""
             indicator := (index = QuickCommandState.Selected) ? "&#9656;" : ""
-            rows .= "<div id='qc-row-" . index . "' class='row" . selectedClass . "' unselectable='on' onmouseover='qcHover(" . index . ")' onclick='qcSelect(" . index . ")' ondblclick='qcRun(" . index . ")'>"
+            rows .= "<div id='qc-row-" . index . "' class='row" . selectedClass . "' unselectable='on' onmouseover='qcHover(" . index . ")' onmousedown='qcPress(" . index . ")' ondblclick='qcRun(" . index . ")'>"
                 . "<span class='indicator'>" . indicator . "</span>"
                 . "<span class='command'>" . result.Html . "</span>"
                 . "<span class='note'>" . QuickCommandHtmlEscape(result.Note) . "</span>"
@@ -386,6 +386,7 @@ QuickCommandBuildHtml() {
         . "html,body{height:100%;margin:0;padding:0;background:#" . QuickCommandConfig.Background . ";color:#" . QuickCommandConfig.Foreground . ";overflow:hidden;font-family:'Microsoft YaHei','Segoe UI Emoji','Segoe UI Symbol','Segoe UI',sans-serif;font-size:30px;font-weight:700;-ms-user-select:none;user-select:none;}"
         . ".wrap{width:100%;height:100%;box-sizing:border-box;padding:0;overflow-y:auto;overflow-x:hidden;scrollbar-face-color:#" . QuickCommandConfig.ScrollbarFace . ";scrollbar-track-color:#" . QuickCommandConfig.ScrollbarTrack . ";scrollbar-arrow-color:#" . QuickCommandConfig.ScrollbarArrow . ";scrollbar-highlight-color:#" . QuickCommandConfig.ScrollbarFace . ";scrollbar-shadow-color:#" . QuickCommandConfig.ScrollbarTrack . ";scrollbar-3dlight-color:#" . QuickCommandConfig.ScrollbarTrack . ";scrollbar-darkshadow-color:#" . QuickCommandConfig.Background . ";}"
         . ".row{display:table;width:100%;table-layout:fixed;height:" . QuickCommandConfig.RowHeight . "px;line-height:" . QuickCommandConfig.RowHeight . "px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 18px;box-sizing:border-box;cursor:default;border-left:4px solid transparent;-ms-user-select:none;user-select:none;transition:background-color .12s ease,border-left-color .12s ease,color .12s ease;}"
+        . ".row.hovered{background:#" . QuickCommandConfig.HoverBackground . ";}"
         . ".row.selected{background:#" . QuickCommandConfig.SelectedBackground . ";border-left-color:#" . QuickCommandConfig.Accent . ";}"
         . ".row.running{background:#" . QuickCommandConfig.RunningBackground . ";border-left-color:#" . QuickCommandConfig.Regex . ";}"
         . ".indicator{display:table-cell;width:" . QuickCommandConfig.IndicatorWidth . "px;color:#" . QuickCommandConfig.Accent . ";vertical-align:middle;}"
@@ -401,21 +402,25 @@ QuickCommandBuildHtml() {
         . ".empty{padding:24px 20px;color:#" . QuickCommandConfig.Muted . ";}"
         . "</style>"
         . "<script>"
-        . "var qcSelected=" . QuickCommandState.Selected . ";var qcRunning=false;"
+        . "var qcSelected=" . QuickCommandState.Selected . ";var qcHovered=0;var qcRunning=false;var qcMouseDown=false;"
         . "function qcSignal(a,i){document.title='qc:'+a+':'+i+':'+(new Date()).getTime();}"
         . "function qcRow(i){return document.getElementById('qc-row-'+i);}"
         . "function qcHasClass(el,name){return el&&((' '+el.className+' ').indexOf(' '+name+' ')>=0);}"
         . "function qcAddClass(el,name){if(el&&!qcHasClass(el,name)){el.className+=' '+name;}}"
         . "function qcRemoveClass(el,name){if(el){el.className=(' '+el.className+' ').replace(new RegExp(' '+name+' ','g'),' ').replace(/^ +| +$/g,'');}}"
         . "function qcScrollNearest(el){var wrap=document.getElementById('qc-wrap');if(!wrap||!el){return;}var top=el.offsetTop;var bottom=top+el.offsetHeight;if(top<wrap.scrollTop){wrap.scrollTop=top;}else if(bottom>wrap.scrollTop+wrap.clientHeight){wrap.scrollTop=bottom-wrap.clientHeight;}}"
+        . "function qcLeftButton(){var e=window.event;return !e||e.button==0||e.button==1;}"
+        . "function qcSetHover(next){if(qcHovered==next){return;}var oldRow=qcRow(qcHovered);var newRow=qcRow(next);if(oldRow){qcRemoveClass(oldRow,'hovered');}if(newRow){qcAddClass(newRow,'hovered');}qcHovered=next;}"
         . "function qcSetSelection(prev,next){var oldRow=qcRow(qcSelected||prev);var newRow=qcRow(next);if(oldRow&&oldRow!=newRow){qcRemoveClass(oldRow,'selected');var oldMark=oldRow.getElementsByTagName('span')[0];if(oldMark){oldMark.innerHTML='';}}if(newRow){qcAddClass(newRow,'selected');var newMark=newRow.getElementsByTagName('span')[0];if(newMark){newMark.innerHTML='&#9656;';}qcSelected=next;qcScrollNearest(newRow);}}"
+        . "function qcCommitSelection(i){if(qcRunning||qcSelected==i){return;}qcSetSelection(qcSelected,i);qcSignal('select',i);}"
         . "function qcSetRunning(i){qcRunning=true;qcSetSelection(qcSelected,i);qcAddClass(qcRow(i),'running');}"
-        . "function qcHover(i){if(qcRunning||qcSelected==i){return;}qcSetSelection(qcSelected,i);qcSignal('hover',i);}"
-        . "function qcSelect(i){if(qcRunning){return;}qcSetSelection(qcSelected,i);qcSignal('select',i);}"
+        . "function qcHover(i){if(qcRunning){return;}qcSetHover(i);if(qcMouseDown){qcCommitSelection(i);}}"
+        . "function qcPress(i){if(qcRunning||!qcLeftButton()){return;}qcMouseDown=true;qcSetHover(i);qcCommitSelection(i);}"
+        . "function qcSelect(i){if(qcRunning){return;}qcCommitSelection(i);}"
         . "function qcRun(i){if(qcRunning){return;}qcSetRunning(i);qcSignal('run',i);}"
-        . "document.onselectstart=function(){return false;};document.ondragstart=function(){return false;};"
+        . "document.onmouseup=function(){qcMouseDown=false;};document.onselectstart=function(){return false;};document.ondragstart=function(){return false;};"
         . "</script>"
-        . "</head><body onselectstart='return false' ondragstart='return false' unselectable='on'><div id='qc-wrap' class='wrap' unselectable='on'>" . rows . "</div></body></html>"
+        . "</head><body onselectstart='return false' ondragstart='return false' unselectable='on'><div id='qc-wrap' class='wrap' unselectable='on' onmouseleave='qcSetHover(0)'>" . rows . "</div></body></html>"
 }
 
 QuickCommandBuildBlankHtml() {
